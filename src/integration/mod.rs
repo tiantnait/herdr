@@ -320,6 +320,26 @@ const GROK_HOOK_ASSET: &str = if cfg!(windows) {
     include_str!("assets/grok/herdr-agent-state.sh")
 };
 const GROK_INTEGRATION_VERSION: u32 = 2;
+const JUNIE_HOOK_INSTALL_NAME: &str = if cfg!(windows) {
+    "herdr-agent-state.ps1"
+} else {
+    "herdr-agent-state.sh"
+};
+const JUNIE_HOOK_ASSET: &str = if cfg!(windows) {
+    include_str!("assets/junie/herdr-agent-state.ps1")
+} else {
+    include_str!("assets/junie/herdr-agent-state.sh")
+};
+const JUNIE_INTEGRATION_VERSION: u32 = 1;
+const JUNIE_HOOK_EVENTS: [(&str, &str); 7] = [
+    ("SessionStart", "session"),
+    ("UserPromptSubmit", "working"),
+    ("PreToolUse", "working"),
+    ("PermissionRequest", "blocked"),
+    ("Stop", "idle"),
+    ("StopFailure", "idle"),
+    ("SessionEnd", "release"),
+];
 
 pub(crate) const INSTALL_WARNING_PREFIX: &str = "warning:";
 

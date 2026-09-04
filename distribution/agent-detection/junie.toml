@@ -1,0 +1,41 @@
+id = "junie"
+version = "2026.09.02.1"
+min_engine_version = 3
+updated_at = "2026-09-02T00:00:00Z"
+aliases = ["junie-cli"]
+
+[[rules]]
+id = "permission_blocked"
+state = "blocked"
+priority = 300
+region = "bottom_non_empty_lines(8)"
+visible_blocker = true
+any = [
+  { contains = ["Allow", "Deny"] },
+  { contains = ["Approve", "Reject"] },
+  { contains = ["Press Enter to continue", "Esc to cancel"] },
+]
+
+[[rules]]
+id = "working_status"
+state = "working"
+priority = 200
+region = "bottom_non_empty_lines(8)"
+visible_working = true
+any = [
+  { contains = ["Thinking"] },
+  { contains = ["Working"] },
+  { contains = ["Running"] },
+]
+
+[[rules]]
+id = "prompt_idle"
+state = "idle"
+priority = 100
+region = "bottom_non_empty_lines(8)"
+visible_idle = true
+any = [
+  { contains = ["Ask Junie"] },
+  { contains = ["What would you like to do?"] },
+  { contains = ["Type your message"] },
+]

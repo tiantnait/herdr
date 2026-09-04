@@ -22,8 +22,9 @@ use super::config_edit::{
 use super::config_file::{check_config_targets, write_config};
 use super::env::{
     antigravity_cli_dir, claude_dir, codex_dir, copilot_dir, cursor_dir, devin_dir, droid_dir,
-    grok_dir, hermes_dir, hermes_plugin_dir, kilo_dir, kimi_dir, letta_dir, mastracode_dir,
-    omp_extension_dir, opencode_dir, opencode_state_dir, pi_extension_dir, qodercli_dir, qwen_dir,
+    grok_dir, hermes_dir, hermes_plugin_dir, junie_dir, kilo_dir, kimi_dir, letta_dir,
+    mastracode_dir, omp_extension_dir, opencode_dir, opencode_state_dir, pi_extension_dir,
+    qodercli_dir, qwen_dir,
 };
 use super::file_ops::{
     make_executable, remove_dir_all_if_exists, remove_file_if_exists, remove_legacy_bash_hook_file,
@@ -37,9 +38,10 @@ use super::types::{
     ClaudeUninstallResult, CodexInstallPaths, CodexUninstallResult, CopilotInstallPaths,
     CopilotUninstallResult, CursorInstallPaths, CursorUninstallResult, DevinInstallPaths,
     DevinUninstallResult, DroidInstallPaths, DroidUninstallResult, GrokInstallPaths,
-    GrokUninstallResult, HermesInstallPaths, HermesUninstallResult, KiloInstallPaths,
-    KiloUninstallResult, KimiInstallPaths, KimiUninstallResult, LettaInstallPaths,
-    LettaUninstallResult, MastracodeInstallPaths, MastracodeUninstallResult, OmpInstallPaths,
+    GrokUninstallResult, HermesInstallPaths, HermesUninstallResult, JunieInstallPaths,
+    JunieUninstallResult, KiloInstallPaths, KiloUninstallResult, KimiInstallPaths,
+    KimiUninstallResult, LettaInstallPaths, LettaUninstallResult, MastracodeInstallPaths,
+    MastracodeUninstallResult, OmpInstallPaths,
     OmpUninstallResult, OpenCodeInstallPaths, OpenCodeUninstallResult, PiUninstallResult,
     QodercliInstallPaths, QodercliUninstallResult, QwenInstallPaths, QwenUninstallResult,
 };
@@ -53,9 +55,10 @@ use super::{
     DROID_HOOK_EVENTS, DROID_HOOK_INSTALL_NAME, DROID_REMOVED_LIFECYCLE_HOOK_EVENTS,
     GROK_HOOK_ASSET, GROK_HOOK_CONFIG_INSTALL_NAME, GROK_HOOK_INSTALL_NAME,
     HERMES_PLUGIN_INIT_ASSET, HERMES_PLUGIN_INIT_INSTALL_NAME, HERMES_PLUGIN_MANIFEST_ASSET,
-    HERMES_PLUGIN_MANIFEST_INSTALL_NAME, KILO_PLUGIN_ASSET, KILO_PLUGIN_INSTALL_NAME,
-    KIMI_HOOK_ASSET, KIMI_HOOK_INSTALL_NAME, LETTA_HOOK_ASSET, LETTA_HOOK_INSTALL_NAME,
-    LETTA_HOOK_TIMEOUT_MS, MASTRACODE_HOOK_ASSET, MASTRACODE_HOOK_EVENTS,
+    HERMES_PLUGIN_MANIFEST_INSTALL_NAME, JUNIE_HOOK_ASSET, JUNIE_HOOK_EVENTS,
+    JUNIE_HOOK_INSTALL_NAME, KILO_PLUGIN_ASSET, KILO_PLUGIN_INSTALL_NAME, KIMI_HOOK_ASSET,
+    KIMI_HOOK_INSTALL_NAME, LETTA_HOOK_ASSET, LETTA_HOOK_INSTALL_NAME, LETTA_HOOK_TIMEOUT_MS,
+    MASTRACODE_HOOK_ASSET, MASTRACODE_HOOK_EVENTS,
     MASTRACODE_HOOK_INSTALL_NAME, MASTRACODE_HOOK_TIMEOUT_MS, MASTRACODE_REMOVED_HOOK_EVENTS,
     OMP_EXTENSION_ASSET, OMP_EXTENSION_INSTALL_NAME, OPENCODE_PLUGIN_ASSET,
     OPENCODE_PLUGIN_INSTALL_NAME, OPENCODE_TUI_PLUGIN_ASSET, OPENCODE_TUI_PLUGIN_INSTALL_NAME,
@@ -1770,6 +1773,69 @@ pub(crate) fn install_grok() -> io::Result<GrokInstallPaths> {
     Ok(GrokInstallPaths {
         hook_path,
         config_path,
+    })
+}
+
+pub(crate) fn install_junie() -> io::Result<JunieInstallPaths> {
+    let dir = junie_dir()?;
+    fs::create_dir_all(&dir)?;
+    let hook_path = dir.join(JUNIE_HOOK_INSTALL_NAME);
+    fs::write(&hook_path, JUNIE_HOOK_ASSET)?;
+    make_executable(&hook_path)?;
+
+    let config_path = dir.join("config.json");
+    let mut config = if config_path.is_file() {
+        serde_json::from_str::<Value>(&fs::read_to_string(&config_path)?).map_err(|err| {
+            io::Error::other(format!("failed to parse {}: {err}", config_path.display()))
+        })?
+    } else {
+        json!({})
+    };
+    let hooks = ensure_hooks_object(&mut config, &config_path, "junie config", "junie hooks")?;
+    for (event, action) in JUNIE_HOOK_EVENTS {
+        remove_hook_commands(hooks, event, &hook_path, Some(action))?;
+        ensure_command_hook(
+            hooks,
+            event,
+            hook_command(&hook_path, Some(action)),
+            10,
+            None,
+        )?;
+    }
+    fs::write(&config_path, serde_json::to_string_pretty(&config)?)?;
+
+    Ok(JunieInstallPaths {
+        hook_path,
+        config_path,
+    })
+}
+
+pub(crate) fn uninstall_junie() -> io::Result<JunieUninstallResult> {
+    let config_path = junie_dir()?.join("config.json");
+    let hook_path = junie_dir()?.join(JUNIE_HOOK_INSTALL_NAME);
+    let mut updated_config = false;
+    if config_path.is_file() {
+        let mut config = serde_json::from_str::<Value>(&fs::read_to_string(&config_path)?)
+            .map_err(|err| {
+                io::Error::other(format!("failed to parse {}: {err}", config_path.display()))
+            })?;
+        if let Some(hooks) =
+            hooks_object_if_present(&mut config, &config_path, "junie config", "junie hooks")?
+        {
+            for (event, action) in JUNIE_HOOK_EVENTS {
+                updated_config |= remove_hook_commands(hooks, event, &hook_path, Some(action))?;
+            }
+        }
+        if updated_config {
+            fs::write(&config_path, serde_json::to_string_pretty(&config)?)?;
+        }
+    }
+    let removed_hook_file = remove_file_if_exists(&hook_path)?;
+    Ok(JunieUninstallResult {
+        hook_path,
+        config_path,
+        removed_hook_file,
+        updated_config,
     })
 }
 

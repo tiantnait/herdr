@@ -3,11 +3,12 @@ use std::io;
 use super::registry::{integration_target_label, integration_target_supported};
 use super::targets::{
     install_antigravity_cli, install_claude, install_codex, install_copilot, install_cursor,
-    install_devin, install_droid, install_grok, install_hermes, install_kilo, install_kimi,
-    install_letta, install_mastracode, install_omp, install_opencode, install_pi, install_qodercli,
-    install_qwen, uninstall_antigravity_cli, uninstall_claude, uninstall_codex, uninstall_copilot,
-    uninstall_cursor, uninstall_devin, uninstall_droid, uninstall_grok, uninstall_hermes,
-    uninstall_kilo, uninstall_kimi, uninstall_letta, uninstall_mastracode, uninstall_omp,
+    install_devin, install_droid, install_grok, install_hermes, install_junie, install_kilo,
+    install_kimi, install_letta, install_mastracode, install_omp, install_opencode, install_pi,
+    install_qodercli, install_qwen, uninstall_antigravity_cli, uninstall_claude, uninstall_codex,
+    uninstall_copilot, uninstall_cursor, uninstall_devin, uninstall_droid, uninstall_grok,
+    uninstall_hermes, uninstall_junie, uninstall_kilo, uninstall_kimi, uninstall_letta,
+    uninstall_mastracode, uninstall_omp,
     uninstall_opencode, uninstall_pi, uninstall_qodercli, uninstall_qwen,
 };
 use super::version::{agent_version_requirement, enforce_agent_version};
@@ -310,6 +311,19 @@ fn install_target_inner(target: crate::api::schema::IntegrationTarget) -> io::Re
                 ),
                 format!(
                     "registered grok hook config at {}",
+                    installed.config_path.display()
+                ),
+            ]
+        }
+        crate::api::schema::IntegrationTarget::Junie => {
+            let installed = install_junie()?;
+            vec![
+                format!(
+                    "installed junie integration hook to {}",
+                    installed.hook_path.display()
+                ),
+                format!(
+                    "ensured junie config at {}",
                     installed.config_path.display()
                 ),
             ]
@@ -765,6 +779,26 @@ pub(crate) fn uninstall_target(
                     result.config_path.display()
                 ));
             }
+            messages
+        }
+        crate::api::schema::IntegrationTarget::Junie => {
+            let result = uninstall_junie()?;
+            let mut messages = vec![if result.removed_hook_file {
+                format!("removed junie hook at {}", result.hook_path.display())
+            } else {
+                format!("no junie hook found at {}", result.hook_path.display())
+            }];
+            messages.push(if result.updated_config {
+                format!(
+                    "removed herdr junie hook entries from {}",
+                    result.config_path.display()
+                )
+            } else {
+                format!(
+                    "no herdr junie hook entries found in {}",
+                    result.config_path.display()
+                )
+            });
             messages
         }
     };
