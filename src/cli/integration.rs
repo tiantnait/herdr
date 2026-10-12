@@ -59,6 +59,19 @@ fn integration_status(args: &[String]) -> std::io::Result<i32> {
         );
     }
 
+    if let Some(status) = crate::integration::experimental_junie_integration_status() {
+        let state = describe_integration_state(
+            status.state,
+            status.installed_version,
+            status.expected_version,
+        );
+        println!(
+            "{} (experimental): {state} ({})",
+            status.label,
+            status.path.display()
+        );
+    }
+
     Ok(0)
 }
 
@@ -93,6 +106,7 @@ fn integration_install(args: &[String]) -> std::io::Result<i32> {
     let installed = match target {
         IntegrationCommandTarget::Builtin(target) => crate::integration::install_target(target),
         IntegrationCommandTarget::Letta => crate::integration::install_experimental_letta(),
+        IntegrationCommandTarget::Junie => crate::integration::install_experimental_junie(),
     };
     match installed {
         Ok(messages) => {
@@ -114,6 +128,7 @@ fn integration_uninstall(args: &[String]) -> std::io::Result<i32> {
     let removed = match target {
         IntegrationCommandTarget::Builtin(target) => crate::integration::uninstall_target(target),
         IntegrationCommandTarget::Letta => crate::integration::uninstall_experimental_letta(),
+        IntegrationCommandTarget::Junie => crate::integration::uninstall_experimental_junie(),
     };
     match removed {
         Ok(messages) => {
@@ -133,12 +148,14 @@ fn print_integration_messages(messages: Vec<String>) {
     }
 }
 
-/// Integration target accepted by the CLI. Letta is deliberately kept out of
-/// the frozen client endpoint `IntegrationTarget` enum and is handled as an
-/// experimental CLI-only target until the agent registry replaces it.
+/// Integration target accepted by the CLI. Letta and Junie are deliberately
+/// kept out of the frozen client endpoint `IntegrationTarget` enum and are
+/// handled as experimental CLI-only targets until the agent registry replaces
+/// it.
 enum IntegrationCommandTarget {
     Builtin(IntegrationTarget),
     Letta,
+    Junie,
 }
 
 fn parse_integration_target(
@@ -179,7 +196,7 @@ fn parse_integration_target(
             IntegrationCommandTarget::Builtin(IntegrationTarget::AntigravityCli)
         }
         "grok" => IntegrationCommandTarget::Builtin(IntegrationTarget::Grok),
-        "junie" => IntegrationCommandTarget::Builtin(IntegrationTarget::Junie),
+        "junie" => IntegrationCommandTarget::Junie,
         _ => {
             eprintln!("unknown integration target: {target}");
             eprintln!(

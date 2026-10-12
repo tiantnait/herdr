@@ -8,8 +8,8 @@ use super::targets::{
     install_qodercli, install_qwen, uninstall_antigravity_cli, uninstall_claude, uninstall_codex,
     uninstall_copilot, uninstall_cursor, uninstall_devin, uninstall_droid, uninstall_grok,
     uninstall_hermes, uninstall_junie, uninstall_kilo, uninstall_kimi, uninstall_letta,
-    uninstall_mastracode, uninstall_omp,
-    uninstall_opencode, uninstall_pi, uninstall_qodercli, uninstall_qwen,
+    uninstall_mastracode, uninstall_omp, uninstall_opencode, uninstall_pi, uninstall_qodercli,
+    uninstall_qwen,
 };
 use super::version::{agent_version_requirement, enforce_agent_version};
 use super::{KIMI_MIN_VERSION, PI_EXTENSION_INSTALL_NAME};
@@ -73,6 +73,59 @@ pub(crate) fn uninstall_experimental_letta() -> io::Result<Vec<String>> {
     });
     let outcome = if result.is_ok() { "ok" } else { "error" };
     crate::logging::integration_action("uninstall", "letta", outcome);
+    result
+}
+
+/// Experimental Junie install that bypasses the frozen client endpoint
+/// `IntegrationTarget` enum. Fold into the agent registry when it lands.
+pub(crate) fn install_experimental_junie() -> io::Result<Vec<String>> {
+    let result = install_junie().map(|installed| {
+        vec![
+            format!(
+                "installed junie integration hook to {}",
+                installed.hook_path.display()
+            ),
+            format!(
+                "ensured junie config at {}",
+                installed.config_path.display()
+            ),
+        ]
+    });
+    let outcome = if result.is_ok() { "ok" } else { "error" };
+    crate::logging::integration_action("install", "junie", outcome);
+    result
+}
+
+/// Experimental Junie uninstall counterpart.
+pub(crate) fn uninstall_experimental_junie() -> io::Result<Vec<String>> {
+    let result = uninstall_junie().map(|result| {
+        let mut messages = Vec::new();
+        if result.removed_hook_file {
+            messages.push(format!(
+                "removed junie hook at {}",
+                result.hook_path.display()
+            ));
+        } else {
+            messages.push(format!(
+                "no junie hook found at {}",
+                result.hook_path.display()
+            ));
+        }
+        if result.updated_config {
+            messages.push(format!(
+                "removed herdr junie hook entries from {}",
+                result.config_path.display()
+            ));
+        } else {
+            messages.push(format!(
+                "no herdr junie hook entries found in {}",
+                result.config_path.display()
+            ));
+        }
+        messages
+    });
+    let outcome = if result.is_ok() { "ok" } else { "error" };
+    crate::logging::integration_action("uninstall", "junie", outcome);
     result
 }
 
@@ -311,19 +364,6 @@ fn install_target_inner(target: crate::api::schema::IntegrationTarget) -> io::Re
                 ),
                 format!(
                     "registered grok hook config at {}",
-                    installed.config_path.display()
-                ),
-            ]
-        }
-        crate::api::schema::IntegrationTarget::Junie => {
-            let installed = install_junie()?;
-            vec![
-                format!(
-                    "installed junie integration hook to {}",
-                    installed.hook_path.display()
-                ),
-                format!(
-                    "ensured junie config at {}",
                     installed.config_path.display()
                 ),
             ]
@@ -779,26 +819,6 @@ pub(crate) fn uninstall_target(
                     result.config_path.display()
                 ));
             }
-            messages
-        }
-        crate::api::schema::IntegrationTarget::Junie => {
-            let result = uninstall_junie()?;
-            let mut messages = vec![if result.removed_hook_file {
-                format!("removed junie hook at {}", result.hook_path.display())
-            } else {
-                format!("no junie hook found at {}", result.hook_path.display())
-            }];
-            messages.push(if result.updated_config {
-                format!(
-                    "removed herdr junie hook entries from {}",
-                    result.config_path.display()
-                )
-            } else {
-                format!(
-                    "no herdr junie hook entries found in {}",
-                    result.config_path.display()
-                )
-            });
             messages
         }
     };

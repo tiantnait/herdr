@@ -25,7 +25,6 @@ pub(crate) fn integration_target_label(
         crate::api::schema::IntegrationTarget::Mastracode => "mastracode",
         crate::api::schema::IntegrationTarget::AntigravityCli => "antigravity-cli",
         crate::api::schema::IntegrationTarget::Grok => "grok",
-        crate::api::schema::IntegrationTarget::Junie => "junie",
     }
 }
 
@@ -56,7 +55,6 @@ pub(crate) fn integration_target_command_names(
         crate::api::schema::IntegrationTarget::Mastracode => &["mastracode"],
         crate::api::schema::IntegrationTarget::AntigravityCli => &["agy"],
         crate::api::schema::IntegrationTarget::Grok => &["grok"],
-        crate::api::schema::IntegrationTarget::Junie => &["junie"],
     }
 }
 
@@ -269,7 +267,7 @@ fn integration_specs() -> [(
     crate::api::schema::IntegrationTarget,
     io::Result<PathBuf>,
     u32,
-); 18] {
+); 17] {
     [
         (
             crate::api::schema::IntegrationTarget::Pi,
@@ -361,11 +359,6 @@ fn integration_specs() -> [(
             crate::api::schema::IntegrationTarget::Grok,
             grok_dir().map(|dir| dir.join("hooks").join(super::GROK_HOOK_INSTALL_NAME)),
             super::GROK_INTEGRATION_VERSION,
-        ),
-        (
-            crate::api::schema::IntegrationTarget::Junie,
-            junie_dir().map(|dir| dir.join(super::JUNIE_HOOK_INSTALL_NAME)),
-            super::JUNIE_INTEGRATION_VERSION,
         ),
     ]
 }
@@ -519,6 +512,24 @@ pub(crate) fn experimental_letta_integration_status() -> Option<super::Experimen
         state,
         installed_version,
         expected_version: super::LETTA_INTEGRATION_VERSION,
+    })
+}
+
+/// Junie is intentionally kept out of the frozen client endpoint
+/// `IntegrationTarget` enum so published generation-1 clients never receive an
+/// unknown variant. It is installable and reportable as an experimental
+/// CLI-only target until the agent registry replaces the enum-keyed registry.
+pub(crate) fn experimental_junie_integration_status() -> Option<super::ExperimentalIntegrationStatus>
+{
+    let path = junie_dir().ok()?.join(super::JUNIE_HOOK_INSTALL_NAME);
+    let (state, installed_version) =
+        integration_state_for_path(&path, super::JUNIE_INTEGRATION_VERSION);
+    Some(super::ExperimentalIntegrationStatus {
+        label: "junie",
+        path,
+        state,
+        installed_version,
+        expected_version: super::JUNIE_INTEGRATION_VERSION,
     })
 }
 
