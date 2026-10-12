@@ -333,14 +333,15 @@ const JUNIE_HOOK_ASSET: &str = if cfg!(windows) {
     include_str!("assets/junie/herdr-agent-state.sh")
 };
 const JUNIE_INTEGRATION_VERSION: u32 = 1;
-const JUNIE_HOOK_EVENTS: [(&str, &str); 7] = [
+// Junie does not emit a hook on user interrupts (esc), so hooks only report
+// session identity and Herdr keeps screen detection as the state authority.
+// The TUI creates its conversation session after startup, so refresh the
+// session reference from the first prompt and tool events as well.
+const JUNIE_HOOK_EVENTS: [(&str, &str); 4] = [
     ("SessionStart", "session"),
-    ("UserPromptSubmit", "working"),
-    ("PreToolUse", "working"),
-    ("PermissionRequest", "blocked"),
-    ("Stop", "idle"),
-    ("StopFailure", "idle"),
-    ("SessionEnd", "release"),
+    ("UserPromptSubmit", "session"),
+    ("PreToolUse", "session"),
+    ("Stop", "session"),
 ];
 
 pub(crate) const INSTALL_WARNING_PREFIX: &str = "warning:";

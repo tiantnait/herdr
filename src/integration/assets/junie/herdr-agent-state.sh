@@ -3,12 +3,11 @@
 # HERDR_INTEGRATION_ID=junie
 # HERDR_INTEGRATION_VERSION=1
 
-action="${1:-}"
-case "$action" in
-  session|working|blocked|idle|release) ;;
-  *) exit 0 ;;
-esac
+# Reports the current Junie session id to Herdr so the pane can be restored
+# after a Herdr server restart. Lifecycle state stays with Herdr's screen
+# detection because Junie does not emit a hook on every interruption.
 
+[ "${1:-}" = "session" ] || exit 0
 [ "${HERDR_ENV:-}" = "1" ] || exit 0
 [ -n "${HERDR_SOCKET_PATH:-}" ] || exit 0
 [ -n "${HERDR_PANE_ID:-}" ] || exit 0
@@ -21,8 +20,6 @@ import socket
 import sys
 import time
 
-action = sys.argv[1]
-
 try:
     payload = json.load(sys.stdin)
 except Exception:
@@ -30,28 +27,20 @@ except Exception:
 
 session_id = payload.get("session_id")
 if not isinstance(session_id, str) or not session_id:
-    session_id = None
+    raise SystemExit(0)
+
 seq = time.time_ns()
 params = {
     "pane_id": os.environ["HERDR_PANE_ID"],
     "source": "herdr:junie",
     "agent": "junie",
     "seq": seq,
+    "agent_session_id": session_id,
 }
-if action == "session":
-    if session_id is None:
-        raise SystemExit(0)
-    method = "pane.report_agent_session"
-    params["agent_session_id"] = session_id
-    params["session_start_source"] = payload.get("source", "startup")
-elif action == "release":
-    method = "pane.release_agent"
-else:
-    method = "pane.report_agent"
-    params["state"] = action
-    if session_id is not None:
-        params["agent_session_id"] = session_id
-request = json.dumps({"id": f"herdr:junie:{seq}", "method": method, "params": params})
+source = payload.get("source")
+if isinstance(source, str) and source:
+    params["session_start_source"] = source
+request = json.dumps({"id": f"herdr:junie:{seq}", "method": "pane.report_agent_session", "params": params})
 try:
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
         client.settimeout(0.5)
@@ -60,4 +49,4 @@ try:
         client.recv(4096)
 except Exception:
     pass
-' "$action" 2>/dev/null || true
+' 2>/dev/null || true

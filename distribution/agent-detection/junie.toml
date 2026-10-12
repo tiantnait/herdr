@@ -1,7 +1,7 @@
 id = "junie"
-version = "2026.09.02.1"
+version = "2026.10.12.1"
 min_engine_version = 3
-updated_at = "2026-09-02T00:00:00Z"
+updated_at = "2026-10-12T00:00:00Z"
 aliases = ["junie-cli"]
 
 [[rules]]
@@ -24,8 +24,7 @@ region = "bottom_non_empty_lines(8)"
 visible_working = true
 any = [
   { contains = ["Thinking"] },
-  { contains = ["Working"] },
-  { contains = ["Running"] },
+  { line_regex = ['^\s*[\x{2800}-\x{28FF}]'] },
 ]
 
 [[rules]]
@@ -35,7 +34,6 @@ priority = 100
 region = "bottom_non_empty_lines(8)"
 visible_idle = true
 any = [
-  { contains = ["Ask Junie"] },
-  { contains = ["What would you like to do?"] },
-  { contains = ["Type your message"] },
+  { contains = ["Type your prompt"] },
+  { contains = ["Tell me about this project"] },
 ]
