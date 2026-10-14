@@ -1,6 +1,6 @@
 ---
 title: インテグレーション
-description: Pi、OMP、Claude Code、Codex、GitHub Copilot CLI、Devin CLI、Droid、Kimi Code CLI、OpenCode、Kilo Code CLI、Hermes Agent、Qoder CLI、Qwen Code、Letta Code、Cursor Agent CLI、MastraCode、Antigravity CLI、Grok CLI 向けの Herdr インテグレーションをインストールします。
+description: Pi、OMP、Claude Code、Codex、GitHub Copilot CLI、Devin CLI、Droid、Kimi Code CLI、OpenCode、Kilo Code CLI、Hermes Agent、Qoder CLI、Qwen Code、Letta Code、Junie、Cursor Agent CLI、MastraCode、Antigravity CLI、Grok CLI 向けの Herdr インテグレーションをインストールします。
 ---
 
 Herdr は対応するエージェントを自動的に検出します。エージェントのインテグレーションをインストールすると、サーバーの再起動後に Herdr が同じセッションを resume できます。一部のインテグレーションはエージェントの状態も直接報告します。Herdr が対応するエージェントと、自ら Herdr に対応するエージェントについては[エージェント](/ja/docs/agents/)を参照してください。
@@ -27,6 +27,7 @@ herdr integration install mastracode
 herdr integration install qodercli
 herdr integration install qwen
 herdr integration install letta
+herdr integration install junie
 herdr integration install cursor
 herdr integration install antigravity-cli
 herdr integration install grok
@@ -50,6 +51,7 @@ herdr integration uninstall mastracode
 herdr integration uninstall qodercli
 herdr integration uninstall qwen
 herdr integration uninstall letta
+herdr integration uninstall junie
 herdr integration uninstall cursor
 herdr integration uninstall antigravity-cli
 herdr integration uninstall grok
@@ -63,7 +65,7 @@ Herdr は Linux/macOS の統合設定と全プラットフォームの新規フ�
 
 Pi、OMP、Kimi Code CLI、OpenCode、Kilo Code CLI、MastraCode のインテグレーションは、エージェントの状態も報告します。報告している間、Herdr は画面を読む代わりにその報告を使います。Codex は `--no-daemon` で起動した場合にターン状態を報告し、表示中のブロッカーは引き続き画面検出で扱います。その他のインテグレーションでは、状態は画面検出に任せます。
 
-エージェントネイティブのセッション復元には最新の Herdr インテグレーションが必要です: Pi インテグレーションはバージョン `2`、OMP は `3`、Claude Code は `6`、Codex は `5`、GitHub Copilot CLI は `2`、Devin CLI は `2`、Droid は `2`、Kimi Code CLI は `3`、Qoder CLI は `2`、Qwen Code は `1`、Letta Code は `1`、Cursor Agent CLI は `1`、Grok CLI は `2`、OpenCode は `5`、Kilo Code CLI は `1`、Hermes Agent は `5`、MastraCode は `1`、Antigravity CLI は `1` です。インストール済みバージョンは `herdr integration status` で確認してください。
+エージェントネイティブのセッション復元には最新の Herdr インテグレーションが必要です: Pi インテグレーションはバージョン `2`、OMP は `3`、Claude Code は `6`、Codex は `5`、GitHub Copilot CLI は `2`、Devin CLI は `2`、Droid は `2`、Kimi Code CLI は `3`、Qoder CLI は `2`、Qwen Code は `1`、Letta Code は `1`、Junie は `1`、Cursor Agent CLI は `1`、Grok CLI は `2`、OpenCode は `5`、Kilo Code CLI は `1`、Hermes Agent は `5`、MastraCode は `1`、Antigravity CLI は `1` です。インストール済みバージョンは `herdr integration status` で確認してください。
 
 ## 独自エージェントを統合する
 
@@ -330,6 +332,22 @@ herdr integration install grok
 Herdr はデフォルトで `~/.grok` を使い、`GROK_HOME` が設定されていればそちらを使います。Grok の設定ディレクトリはあらかじめ存在している必要があります。Grok はそのディレクトリ内のすべての `hooks/*.json` ファイルを統合するため、インストールは Herdr の `SessionStart` エントリだけを含む `hooks/herdr.json` と `hooks/herdr-agent-state.sh`（Windows では `hooks/herdr-agent-state.ps1`）を書き込み、ほかのフックファイルには触れません。アンインストールは Herdr 所有のこの 2 ファイルだけを削除します。
 
 Grok がセッション開始イベントを発行した後、Herdr は報告されたセッション id を使って `grok --resume <id>` でペインを resume できます。
+
+## Junie
+
+Junie のインテグレーションインストールは実験的で、CLI 専用です。設定のインテグレーション画面や JSON インテグレーション API には表示されません。`herdr integration status` では `junie (experimental)` として報告されます。エージェント検出と `herdr agent start --kind junie` は、このインストール制限とは独立してサポートされます。
+
+Junie フックをインストールします:
+
+```bash
+herdr integration install junie
+```
+
+このフックは、Junie の `SessionStart`、`UserPromptSubmit`、`PreToolUse`、`Stop` フックから会話セッション id を報告します。Junie の状態は Herdr のスクリーンマニフェスト検出から得られます。Junie はターンが中断されたときにフックを発行しないためです。
+
+Herdr はデフォルトで `~/.junie` を使い、`JUNIE_CONFIG_DIR` が設定されていればそちらを使います。ディレクトリが存在しない場合は作成されます。インストールは `herdr-agent-state.sh`（Windows では `herdr-agent-state.ps1`）を書き込み、`config.json` に Herdr のエントリを追加します。アンインストールは一致するエントリと管理対象スクリプトだけを削除します。
+
+Junie がセッションを報告した後、Herdr は `junie --resume --session-id <id>` でペインを resume できます。
 
 ## カスタムステータスラベル
 

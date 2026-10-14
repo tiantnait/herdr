@@ -1,6 +1,6 @@
 ---
 title: 集成
-description: 为 Pi、OMP、Claude Code、Codex、GitHub Copilot CLI、Devin CLI、Droid、Kimi Code CLI、OpenCode、Kilo Code CLI、Hermes Agent、Qoder CLI、Qwen Code、Letta Code、Cursor Agent CLI、MastraCode、Antigravity CLI 和 Grok CLI 安装 Herdr 集成。
+description: 为 Pi、OMP、Claude Code、Codex、GitHub Copilot CLI、Devin CLI、Droid、Kimi Code CLI、OpenCode、Kilo Code CLI、Hermes Agent、Qoder CLI、Qwen Code、Letta Code、Junie、Cursor Agent CLI、MastraCode、Antigravity CLI 和 Grok CLI 安装 Herdr 集成。
 ---
 
 Herdr 会自动检测它支持的智能体。安装智能体的集成后,Herdr 可以在服务器重启后恢复同一个会话。部分集成还会直接上报智能体的状态。哪些智能体由 Herdr 支持、哪些智能体自己支持 Herdr,见[智能体](/zh-cn/docs/agents/)。
@@ -27,6 +27,7 @@ herdr integration install mastracode
 herdr integration install qodercli
 herdr integration install qwen
 herdr integration install letta
+herdr integration install junie
 herdr integration install cursor
 herdr integration install antigravity-cli
 herdr integration install grok
@@ -50,6 +51,7 @@ herdr integration uninstall mastracode
 herdr integration uninstall qodercli
 herdr integration uninstall qwen
 herdr integration uninstall letta
+herdr integration uninstall junie
 herdr integration uninstall cursor
 herdr integration uninstall antigravity-cli
 herdr integration uninstall grok
@@ -63,7 +65,7 @@ Herdr 对 Linux/macOS 上的集成配置和所有平台的新文件使用原子�
 
 Pi、OMP、Kimi Code CLI、OpenCode、Kilo Code CLI 和 MastraCode 的集成还会上报智能体的状态。在它们上报期间,Herdr 使用这些上报,而不是读取屏幕。Codex 使用 `--no-daemon` 运行时会上报轮次状态,可见的阻塞提示仍由屏幕检测处理。其他集成则把状态交给屏幕检测。
 
-原生会话恢复需要最新的 Herdr 集成: Pi 集成版本 `2`、OMP 版本 `3`、Claude Code 版本 `6`、Codex 版本 `5`、GitHub Copilot CLI 版本 `2`、Devin CLI 版本 `2`、Droid 版本 `2`、Kimi Code CLI 版本 `3`、Qoder CLI 版本 `2`、Qwen Code 版本 `1`、Letta Code 版本 `1`、Cursor Agent CLI 版本 `1`、Grok CLI 版本 `2`、OpenCode 版本 `5`、Kilo Code CLI 版本 `1`、Hermes Agent 版本 `5`、MastraCode 版本 `1`、Antigravity CLI 版本 `1`。用 `herdr integration status` 查看已安装版本。
+原生会话恢复需要最新的 Herdr 集成: Pi 集成版本 `2`、OMP 版本 `3`、Claude Code 版本 `6`、Codex 版本 `5`、GitHub Copilot CLI 版本 `2`、Devin CLI 版本 `2`、Droid 版本 `2`、Kimi Code CLI 版本 `3`、Qoder CLI 版本 `2`、Qwen Code 版本 `1`、Letta Code 版本 `1`、Junie 版本 `1`、Cursor Agent CLI 版本 `1`、Grok CLI 版本 `2`、OpenCode 版本 `5`、Kilo Code CLI 版本 `1`、Hermes Agent 版本 `5`、MastraCode 版本 `1`、Antigravity CLI 版本 `1`。用 `herdr integration status` 查看已安装版本。
 
 ## 集成你自己的智能体
 
@@ -330,6 +332,22 @@ herdr integration install grok
 Herdr 默认使用 `~/.grok`,设置了 `GROK_HOME` 时使用后者。Grok 配置目录必须已经存在。Grok 会合并该目录中的所有 `hooks/*.json` 文件,因此安装会写入独立的 `hooks/herdr.json`,其中包含 Herdr 的 `SessionStart` 条目,并同时写入 `hooks/herdr-agent-state.sh`（Windows 上为 `hooks/herdr-agent-state.ps1`）;它不会修改其他钩子文件。卸载只会删除这两个由 Herdr 管理的文件。
 
 Grok 发出会话启动事件后,Herdr 可以用上报的会话 id 通过 `grok --resume <id>` 恢复窗格。
+
+## Junie
+
+Junie 集成安装是实验性的,且仅支持 CLI。它不会出现在设置中的集成界面或 JSON 集成 API 中。`herdr integration status` 会将其报告为 `junie (experimental)`。智能体检测和 `herdr agent start --kind junie` 与此安装限制无关,可以独立使用。
+
+安装 Junie 钩子:
+
+```bash
+herdr integration install junie
+```
+
+该钩子通过 Junie 的 `SessionStart`、`UserPromptSubmit`、`PreToolUse` 和 `Stop` 钩子上报会话 id。Junie 的状态仍然来自 Herdr 的屏幕清单检测,因为 Junie 在回合被中断时不会发出钩子。
+
+Herdr 默认使用 `~/.junie`,设置了 `JUNIE_CONFIG_DIR` 时使用后者。目录不存在时会自动创建。安装会写入 `herdr-agent-state.sh`（Windows 上为 `herdr-agent-state.ps1`）,并向 `config.json` 添加 Herdr 条目。卸载只会删除匹配的条目和由 Herdr 管理的脚本。
+
+Junie 上报会话后,Herdr 可以用 `junie --resume --session-id <id>` 恢复窗格。
 
 ## 自定义状态标签
 
